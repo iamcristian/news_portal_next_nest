@@ -11,6 +11,9 @@ services:
       - 4000:4000
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres?schema=public
+      - JWT_SECRET="secret"
+    volumes:
+      - ./backend:/app
   db:
     container_name: db_news
     image: postgres:12
@@ -23,6 +26,6 @@ services:
       - 5432:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
-    
+
 volumes:
   pgdata: {}
