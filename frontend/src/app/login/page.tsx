@@ -1,12 +1,24 @@
-// src/app/login/page.tsx
 "use client";
 
-import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AxiosError } from "axios";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { loginUser } from "@/lib/api";
 
+// Define schema for login form data using Zod
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
@@ -15,25 +27,33 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [error, setError] = useState("");
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Configuration for react-hook-form with zod resolver
+  const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const response = await axios.post(
-        "http://localhost:4000/auth/login",
-        data
-      );
-      console.log("User logged in:", response.data);
-      // Aquí redireccionarías al dashboard o página principal
+      const response = await loginUser(data);
+
+      if (response.data.access_token) {
+        const token = response.data.access_token;
+        localStorage.setItem("token", token);
+        router.push("/news");
+      } else {
+        setError("Login failed. Invalid credentials.");
+      }
     } catch (error) {
-      setError("Invalid login credentials");
+      if (error instanceof AxiosError && error.response) {
+        const errorMessage =
+          error.response.data?.message || "Login failed. Please try again.";
+        setError(errorMessage);
+      } else {
+        setError("Login failed. Please try again.");
+      }
     }
   };
 
@@ -42,48 +62,56 @@ export default function LoginPage() {
       <div className="max-w-md w-full bg-white p-6 shadow-md rounded-md">
         <h1 className="text-2xl font-bold mb-6">Login</h1>
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              {...register("email")}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
 
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              {...register("password")}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="email">Email</Label>
+                  <FormControl>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Your email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage>
+                    {form.formState.errors.email?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
             />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md"
-          >
-            Login
-          </button>
-        </form>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="password">Password</Label>
+                  <FormControl>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Your password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage>
+                    {form.formState.errors.password?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full mt-4">
+              Login
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
