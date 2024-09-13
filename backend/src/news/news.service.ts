@@ -16,8 +16,12 @@ export class NewsService {
     });
   }
 
-  async findAll() {
+  async findAll(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+
     return await this.prisma.news.findMany({
+      skip,
+      take: limit,
       include: {
         category: true,
         author: true,
@@ -65,8 +69,8 @@ export class NewsService {
   }
 
   async remove(id: string, userId: string, userRole: string) {
-    const news = await this.prisma.news.findUnique({where: { id }});
-    
+    const news = await this.prisma.news.findUnique({ where: { id } });
+
     if (!news) {
       throw new HttpException('News not found', HttpStatus.NOT_FOUND);
     }
@@ -80,5 +84,27 @@ export class NewsService {
     return await this.prisma.news.delete({
       where: { id },
     });
+  }
+
+  async search(query: string) {
+    return await this.prisma.news.findMany({
+      where: {
+        OR: [
+          {
+            title: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            content: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ]
+      }
+    })
+  
   }
 }

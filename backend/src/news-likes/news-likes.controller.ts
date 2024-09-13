@@ -19,16 +19,16 @@ export class NewsLikesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.newsLikesService.findOne(+id);
+    return this.newsLikesService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateNewsLikeDto: UpdateNewsLikeDto) {
-    return this.newsLikesService.update(+id, updateNewsLikeDto);
+    return this.newsLikesService.update(id, updateNewsLikeDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.newsLikesService.remove(+id);
+    return this.newsLikesService.remove(id);
   }
 }
