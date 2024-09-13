@@ -13,7 +13,4 @@ export class CreateNewsDto {
   @IsNotEmpty()
   categoryId: string;
 
-  @IsString()
-  @IsNotEmpty()
-  authorId: string;
 }
