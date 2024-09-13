@@ -25,7 +25,6 @@ export class NewsController {
     @Body() createNewsDto: CreateNewsDto,
     @Request() req: { user: UserRequest },
   ) {
-    console.log(req);
     const authorId = req.user.userId;
     return this.newsService.create(createNewsDto, authorId);
   }
