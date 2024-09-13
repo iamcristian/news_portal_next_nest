@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id              String     @id @default(uuid())
+  name            String     @db.Text
+  email           String     @unique
+  password        String
+  role            Role        @default(USER)
+  registrationDate DateTime   @default(now())
+  comments        Comment[]
+  likes           NewsLike[]
+  news            News[]
+
+  @@index([email])
+}
+
+// Enum for User roles
+enum Role {
+  ADMIN
+  USER
+}
+
+// Category model
+model Category {
+  id      String  @id @default(uuid())
+  name    String  @unique
+  news    News[]
+
+  @@index([name])
+}
+
+// News model
+model News {
+  id                String     @id @default(uuid())
+  title             String     @db.Text
+  content           String     @db.Text
+  publicationDate   DateTime   @default(now())
+  status            NewsStatus @default(DRAFT)
+  author            User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId          String
+  category          Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId        String
+  comments          Comment[]
+  tags              NewsTag[]
+  likes             NewsLike[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([title])
+}
+
+// Enum for News Status
+enum NewsStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Comment model
+model Comment {
+  id             String     @id @default(uuid())
+  content        String     @db.Text
+  commentDate    DateTime   @default(now())
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  news           News       @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  newsId         String
+
+  @@index([userId])
+  @@index([newsId])
+}
+
+// Tag model
+model Tag {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  news     NewsTag[]
+
+  @@index([name])
+}
+
+// Pivot table for the many-to-many relation between News and Tags
+model NewsTag {
+  news       News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  newsId     String
+  tag        Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId      String
+
+  @@id([newsId, tagId])
+  @@index([newsId, tagId])
+}
+
+// Table for managing "likes" between users and news articles
+model NewsLike {
+  id          String     @id @default(uuid())
+  news        News       @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  newsId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  likeDate    DateTime   @default(now())
+
+  @@unique([newsId, userId])
+  @@index([newsId, userId])
+}
